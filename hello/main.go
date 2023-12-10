@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"github.com/dskrzypiec/scheduler/dag"
 	"github.com/dskrzypiec/scheduler/db"
 	"github.com/dskrzypiec/scheduler/exec"
+	"github.com/dskrzypiec/scheduler/meta"
 	"github.com/dskrzypiec/scheduler/sched"
 )
 
@@ -50,9 +52,13 @@ func setupDAGs() {
 	dag.Add(emptyDag)
 }
 
+//go:embed *.go
+var taskGoFiles embed.FS
+
 func main() {
 	const port = 8080
 	setupDAGs()
+	meta.ParseASTs(taskGoFiles)
 
 	dbClient, dbErr := db.NewSqliteClient("scheduler.db")
 	if dbErr != nil {

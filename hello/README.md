@@ -4,6 +4,7 @@ The only requirements to run hello example program is having Go in version
 `>=1.21` and SQlite. To compile and run the example just run:
 
 ```
+go generate
 go build
 ./hello
 ```
@@ -15,6 +16,7 @@ database. Few examples:
 ```
 sqlite3 scheduler.db 'SELECT DagId, StartTs, Schedule, CreateTs FROM dags'
 sqlite3 scheduler.db 'SELECT DagId, TaskId, IsCurrent, InsertTs, TaskTypeName FROM dagtasks'
+sqlite3 scheduler.db 'SELECT DagId, TaskId, IsCurrent, TaskBodySource FROM dagtasks'
 sqlite3 scheduler.db 'SELECT * FROM dagruns'
 sqlite3 scheduler.db 'SELECT * FROM dagruntasks'
 ```
