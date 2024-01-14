@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dskrzypiec/scheduler/dag"
-	"github.com/dskrzypiec/scheduler/db"
-	"github.com/dskrzypiec/scheduler/exec"
-	"github.com/dskrzypiec/scheduler/meta"
-	"github.com/dskrzypiec/scheduler/sched"
+	"github.com/ppacer/core/dag"
+	"github.com/ppacer/core/db"
+	"github.com/ppacer/core/exec"
+	"github.com/ppacer/core/meta"
+	"github.com/ppacer/core/scheduler"
 )
 
 type EmptyTask struct {
@@ -24,7 +24,7 @@ func (et EmptyTask) Execute() {
 	fmt.Printf(" ========== EmptyTask: %s ==========\n", et.TaskId)
 }
 
-func setupDAGs() {
+func emptyDag() dag.Dag {
 	//        t2 ------
 	//      /          \
 	// root              end
@@ -42,14 +42,12 @@ func setupDAGs() {
 	t4.Next(&end)
 
 	startTs := time.Date(2023, time.December, 8, 12, 0, 0, 0, time.UTC)
-	schedule := dag.FixedSchedule{Interval: 5 * time.Second, Start: startTs}
+	schedule := dag.FixedSchedule{Interval: 15 * time.Second, Start: startTs}
 	emptyDag := dag.New(dag.Id("empty_dag")).
 		AddSchedule(&schedule).
 		AddRoot(&root).
 		Done()
-
-	// Add emptyDag to the central DAG repository.
-	dag.Add(emptyDag)
+	return emptyDag
 }
 
 //go:embed *.go
@@ -57,14 +55,16 @@ var taskGoFiles embed.FS
 
 func main() {
 	const port = 8080
-	setupDAGs()
+	dag.Add(emptyDag()) // Add emptyDag to the central DAG repository.
+
 	meta.ParseASTs(taskGoFiles)
 
 	dbClient, dbErr := db.NewSqliteClient("scheduler.db")
 	if dbErr != nil {
 		log.Panic(dbErr)
 	}
-	scheduler := sched.New(dbClient)
+	config := scheduler.DefaultConfig
+	scheduler := scheduler.New(dbClient, scheduler.DefaultQueues(config), config)
 	schedulerHttpHandler := scheduler.Start()
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
