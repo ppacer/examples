@@ -1,7 +1,7 @@
 # Hello World example
 
 The only requirements to run hello example program is having Go in version
-`>=1.21` and SQlite. To compile and run the example just run:
+`>=1.21` and SQLite. To compile and run the example just run:
 
 ```
 go generate
