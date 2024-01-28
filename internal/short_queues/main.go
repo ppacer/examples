@@ -43,15 +43,24 @@ func emptyLinkedList(dagId string, len int, interval time.Duration) dag.Dag {
 	return linkedList
 }
 
+func prepDagRegistry() dag.Registry {
+	shortLL := emptyLinkedList("short_ll", 10, 30*time.Second)
+	shortLLFreq := emptyLinkedList("short_ll_freq", 10, 15*time.Second)
+	longerLL := emptyLinkedList("longer_ll", 100, 30*time.Second)
+
+	return dag.Registry{
+		shortLL.Id:     shortLL,
+		shortLLFreq.Id: shortLLFreq,
+		longerLL.Id:    longerLL,
+	}
+}
+
 //go:embed *.go
 var taskGoFiles embed.FS
 
 func main() {
 	const port = 8080
-	// Add emptyDag to the central DAG repository.
-	dag.Add(emptyLinkedList("short_ll", 10, 30*time.Second))
-	dag.Add(emptyLinkedList("short_ll_freq", 10, 15*time.Second))
-	dag.Add(emptyLinkedList("longer_ll", 100, 30*time.Second))
+	dags := prepDagRegistry()
 
 	meta.ParseASTs(taskGoFiles)
 
@@ -64,7 +73,7 @@ func main() {
 	config.DagRunTaskQueueLen = 1
 	fmt.Printf("config: %+v\n", config)
 	scheduler := scheduler.New(dbClient, scheduler.DefaultQueues(config), config)
-	schedulerHttpHandler := scheduler.Start()
+	schedulerHttpHandler := scheduler.Start(dags)
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: schedulerHttpHandler,
@@ -73,7 +82,7 @@ func main() {
 	// Run executor within the same program
 	go func() {
 		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), nil)
-		executor.Start()
+		executor.Start(dags)
 	}()
 
 	lasErr := server.ListenAndServe()
