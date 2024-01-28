@@ -55,7 +55,10 @@ var taskGoFiles embed.FS
 
 func main() {
 	const port = 8080
-	dag.Add(emptyDag()) // Add emptyDag to the central DAG repository.
+	eDag := emptyDag()
+	dags := dag.Registry{
+		eDag.Id: eDag,
+	}
 
 	meta.ParseASTs(taskGoFiles)
 
@@ -65,7 +68,7 @@ func main() {
 	}
 	config := scheduler.DefaultConfig
 	scheduler := scheduler.New(dbClient, scheduler.DefaultQueues(config), config)
-	schedulerHttpHandler := scheduler.Start()
+	schedulerHttpHandler := scheduler.Start(dags)
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: schedulerHttpHandler,
@@ -74,7 +77,7 @@ func main() {
 	// Run executor within the same program
 	go func() {
 		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), nil)
-		executor.Start()
+		executor.Start(dags)
 	}()
 
 	lasErr := server.ListenAndServe()
