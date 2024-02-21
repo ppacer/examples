@@ -20,8 +20,9 @@ type EmptyTask struct {
 }
 
 func (et EmptyTask) Id() string { return et.TaskId }
-func (et EmptyTask) Execute() {
+func (et EmptyTask) Execute(tc dag.TaskContext) {
 	fmt.Printf(" ========== EmptyTask: %s ==========\n", et.TaskId)
+	tc.Logger.Warn("Empty task finished successfully!", "ts", time.Now())
 }
 
 func emptyDag() dag.Dag {
@@ -66,6 +67,10 @@ func main() {
 	if dbErr != nil {
 		log.Panic(dbErr)
 	}
+	logsDbClient, logsDbErr := db.NewSqliteClientForLogs("logs.db")
+	if logsDbErr != nil {
+		log.Panic(logsDbErr)
+	}
 	config := scheduler.DefaultConfig
 	scheduler := scheduler.New(dbClient, scheduler.DefaultQueues(config), config)
 	schedulerHttpHandler := scheduler.Start(dags)
@@ -76,7 +81,7 @@ func main() {
 
 	// Run executor within the same program
 	go func() {
-		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), nil)
+		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), logsDbClient, nil)
 		executor.Start(dags)
 	}()
 
