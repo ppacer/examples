@@ -20,8 +20,9 @@ type EmptyTask struct {
 }
 
 func (et EmptyTask) Id() string { return et.TaskId }
-func (et EmptyTask) Execute() {
+func (et EmptyTask) Execute(tc dag.TaskContext) {
 	fmt.Printf(" ========== EmptyTask: %s ==========\n", et.TaskId)
+	tc.Logger.Warn("Empty task finished successfully!", "ts", time.Now())
 }
 
 func emptyLinkedList(dagId string, len int, interval time.Duration) dag.Dag {
@@ -55,6 +56,18 @@ func prepDagRegistry() dag.Registry {
 	}
 }
 
+func setupSQLiteDBs() (*db.Client, *db.Client) {
+	dbClient, dbErr := db.NewSqliteClient("scheduler.db")
+	if dbErr != nil {
+		log.Panic(dbErr)
+	}
+	logsDbClient, logsDbErr := db.NewSqliteClientForLogs("logs.db")
+	if logsDbErr != nil {
+		log.Panic(logsDbErr)
+	}
+	return dbClient, logsDbClient
+}
+
 //go:embed *.go
 var taskGoFiles embed.FS
 
@@ -64,10 +77,7 @@ func main() {
 
 	meta.ParseASTs(taskGoFiles)
 
-	dbClient, dbErr := db.NewSqliteClient("scheduler.db")
-	if dbErr != nil {
-		log.Panic(dbErr)
-	}
+	dbClient, logsDbClient := setupSQLiteDBs()
 	config := scheduler.DefaultConfig
 	config.DagRunQueueLen = 1
 	config.DagRunTaskQueueLen = 1
@@ -81,7 +91,7 @@ func main() {
 
 	// Run executor within the same program
 	go func() {
-		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), nil)
+		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), logsDbClient, nil)
 		executor.Start(dags)
 	}()
 
