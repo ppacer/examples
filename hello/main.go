@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"net/http"
 	"time"
 
 	"github.com/ppacer/core/dag"
@@ -15,79 +14,61 @@ import (
 	"github.com/ppacer/core/scheduler"
 )
 
-type EmptyTask struct {
-	TaskId string
-}
-
-func (et EmptyTask) Id() string { return et.TaskId }
-func (et EmptyTask) Execute(tc dag.TaskContext) {
-	fmt.Printf(" ========== EmptyTask: %s ==========\n", et.TaskId)
-	tc.Logger.Warn("Empty task finished successfully!", "ts", time.Now())
-}
-
-func emptyDag() dag.Dag {
-	//        t2 ------
-	//      /          \
-	// root              end
-	//      \          /
-	//        t3 --> t4
-	root := dag.Node{Task: EmptyTask{TaskId: "Start"}}
-	t2 := dag.Node{Task: EmptyTask{TaskId: "t2"}}
-	t3 := dag.Node{Task: EmptyTask{TaskId: "t3"}}
-	t4 := dag.Node{Task: EmptyTask{TaskId: "t4"}}
-	end := dag.Node{Task: EmptyTask{TaskId: "Finish"}}
-	root.Next(&t2)
-	root.Next(&t3)
-	t3.Next(&t4)
-	t2.Next(&end)
-	t4.Next(&end)
-
-	startTs := time.Date(2023, time.December, 8, 12, 0, 0, 0, time.UTC)
-	schedule := dag.FixedSchedule{Interval: 15 * time.Second, Start: startTs}
-	emptyDag := dag.New(dag.Id("empty_dag")).
-		AddSchedule(&schedule).
-		AddRoot(&root).
-		Done()
-	return emptyDag
-}
-
 //go:embed *.go
 var taskGoFiles embed.FS
 
 func main() {
-	const port = 8080
-	eDag := emptyDag()
-	dags := dag.Registry{
-		eDag.Id: eDag,
-	}
-
+	const port = 9321
 	meta.ParseASTs(taskGoFiles)
+	printDag := printDAG("example")
+	dags := dag.Registry{}
+	dags[printDag.Id] = printDag
 
-	dbClient, dbErr := db.NewSqliteClient("scheduler.db")
-	if dbErr != nil {
-		log.Panic(dbErr)
-	}
-	logsDbClient, logsDbErr := db.NewSqliteClientForLogs("logs.db")
-	if logsDbErr != nil {
-		log.Panic(logsDbErr)
-	}
-	config := scheduler.DefaultConfig
-	scheduler := scheduler.New(dbClient, scheduler.DefaultQueues(config), config)
-	schedulerHttpHandler := scheduler.Start(dags)
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: schedulerHttpHandler,
-	}
+	// Setup default scheduler
+	schedulerServer := scheduler.DefaultStarted(dags, "scheduler.db", port)
 
-	// Run executor within the same program
+	// Setup and run executor in a separate goroutine
 	go func() {
-		executor := exec.New(fmt.Sprintf("http://localhost:%d", port), logsDbClient, nil)
+		schedUrl := fmt.Sprintf("http://localhost:%d", port)
+		logsDbClient, logsDbErr := db.NewSqliteClientForLogs("logs.db", nil)
+		if logsDbErr != nil {
+			log.Panic(logsDbErr)
+		}
+		executor := exec.New(schedUrl, logsDbClient, nil, nil)
 		executor.Start(dags)
 	}()
 
-	lasErr := server.ListenAndServe()
+	// Start scheduler HTTP server
+	lasErr := schedulerServer.ListenAndServe()
 	if lasErr != nil {
 		slog.Error("ListenAndServer failed", "err", lasErr)
 		log.Panic("Cannot start the server")
 	}
+}
+
+type printTask struct {
+	taskId string
+}
+
+func (pt printTask) Id() string { return pt.taskId }
+
+func (pt printTask) Execute(tc dag.TaskContext) error {
+	fmt.Printf(" >>> PrintTask <<<: %s\n", pt.taskId)
+	tc.Logger.Info("PrintTask finished!", "ts", time.Now())
+	return nil
+}
+
+func printDAG(dagId string) dag.Dag {
+	// [start] --> [end]
+	start := dag.NewNode(printTask{taskId: "start"})
+	start.NextTask(printTask{taskId: "finish"})
+
+	startTs := time.Date(2024, time.March, 11, 12, 0, 0, 0, time.UTC)
+	schedule := dag.FixedSchedule{Interval: 10 * time.Second, Start: startTs}
+
+	printDag := dag.New(dag.Id(dagId)).
+		AddSchedule(&schedule).
+		AddRoot(start).
+		Done()
+	return printDag
 }

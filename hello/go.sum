@@ -28,6 +28,8 @@ github.com/ppacer/core v0.0.0-20240127113220-332965e2f395 h1:i8l48UDfYLYmwXRMIPZ
 github.com/ppacer/core v0.0.0-20240127113220-332965e2f395/go.mod h1:DqI88hRc/nU/NZjtpq2hEvY3iiWojH03bN4u/O7wv7A=
 github.com/ppacer/core v0.0.0-20240221202601-e568de29ff60 h1:YBXhJBzB4THIOcZ+uewfLMpTVU585zpfVvUrEpXNphY=
 github.com/ppacer/core v0.0.0-20240221202601-e568de29ff60/go.mod h1:DqI88hRc/nU/NZjtpq2hEvY3iiWojH03bN4u/O7wv7A=
+github.com/ppacer/core v0.0.0-20240312212842-200b72233d4d h1:VFncyN9oB3hTj6WhlgT0zCqRuCgNNJseq/uCDsHlKeI=
+github.com/ppacer/core v0.0.0-20240312212842-200b72233d4d/go.mod h1:DqI88hRc/nU/NZjtpq2hEvY3iiWojH03bN4u/O7wv7A=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=

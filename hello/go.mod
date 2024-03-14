@@ -1,8 +1,8 @@
-module hello
+module ppacer_demo
 
 go 1.21.1
 
-require github.com/ppacer/core v0.0.0-20240221202601-e568de29ff60
+require github.com/ppacer/core v0.0.0-20240312212842-200b72233d4d
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
