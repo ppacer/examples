@@ -1,6 +1,6 @@
 module ppacer_demo
 
-go 1.21.1
+go 1.22.0
 
 require github.com/ppacer/core v0.0.0-20240312212842-200b72233d4d
 

@@ -1,12 +1,12 @@
 # Hello World example
 
 The only requirements to run hello example program is having Go in version
-`>=1.21` and SQLite. To compile and run the example just run:
+`>=1.22` and SQLite. To compile and run the example just run:
 
 ```
 go generate
 go build
-./hello
+./ppacer_demo
 ```
 
 Currently there is only backend side - scheduler, executor and database. If you
