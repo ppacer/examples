@@ -20,9 +20,8 @@ var taskGoFiles embed.FS
 func main() {
 	const port = 9321
 	meta.ParseASTs(taskGoFiles)
-	printDag := printDAG("example")
 	dags := dag.Registry{}
-	dags[printDag.Id] = printDag
+	dags.Add(printDAG("example"))
 
 	// Setup default scheduler
 	schedulerServer := scheduler.DefaultStarted(dags, "scheduler.db", port)
