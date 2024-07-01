@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ppacer/core/dag"
+	"github.com/ppacer/core/dag/schedule"
 	"github.com/ppacer/core/db"
 	"github.com/ppacer/core/exec"
 	"github.com/ppacer/core/meta"
@@ -33,7 +34,7 @@ func main() {
 		if logsDbErr != nil {
 			log.Panic(logsDbErr)
 		}
-		executor := exec.New(schedUrl, logsDbClient, nil, nil)
+		executor := exec.New(schedUrl, logsDbClient, nil, nil, nil)
 		executor.Start(dags)
 	}()
 
@@ -63,7 +64,7 @@ func printDAG(dagId string) dag.Dag {
 	start.NextTask(printTask{taskId: "finish"})
 
 	startTs := time.Date(2024, time.March, 11, 12, 0, 0, 0, time.UTC)
-	schedule := dag.FixedSchedule{Interval: 10 * time.Second, Start: startTs}
+	schedule := schedule.NewFixed(startTs, 10*time.Second)
 
 	printDag := dag.New(dag.Id(dagId)).
 		AddSchedule(&schedule).
