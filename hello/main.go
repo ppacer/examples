@@ -1,69 +1,39 @@
 package main
 
 import (
-	"embed"
-	"fmt"
-	"log"
-	"log/slog"
+	"context"
 	"time"
 
+	"github.com/ppacer/core"
 	"github.com/ppacer/core/dag"
 	"github.com/ppacer/core/dag/schedule"
-	"github.com/ppacer/core/db"
-	"github.com/ppacer/core/exec"
-	"github.com/ppacer/core/meta"
-	"github.com/ppacer/core/scheduler"
+	"github.com/ppacer/tasks"
 )
-
-//go:embed *.go
-var taskGoFiles embed.FS
 
 func main() {
 	const port = 9321
-	meta.ParseASTs(taskGoFiles)
+	ctx := context.Background()
 	dags := dag.Registry{}
-	dags.Add(printDAG("example"))
-
-	// Setup default scheduler
-	schedulerServer := scheduler.DefaultStarted(dags, "scheduler.db", port)
-
-	// Setup and run executor in a separate goroutine
-	go func() {
-		schedUrl := fmt.Sprintf("http://localhost:%d", port)
-		logsDbClient, logsDbErr := db.NewSqliteClientForLogs("logs.db", nil)
-		if logsDbErr != nil {
-			log.Panic(logsDbErr)
-		}
-		executor := exec.New(schedUrl, logsDbClient, nil, nil, nil)
-		executor.Start(dags)
-	}()
-
-	// Start scheduler HTTP server
-	lasErr := schedulerServer.ListenAndServe()
-	if lasErr != nil {
-		slog.Error("ListenAndServer failed", "err", lasErr)
-		log.Panic("Cannot start the server")
-	}
-}
-
-type printTask struct {
-	taskId string
-}
-
-func (pt printTask) Id() string { return pt.taskId }
-
-func (pt printTask) Execute(tc dag.TaskContext) error {
-	fmt.Printf(" >>> PrintTask <<<: %s\n", pt.taskId)
-	tc.Logger.Info("PrintTask finished!", "ts", time.Now())
-	return nil
+	dags.Add(printDAG("printing_dag"))
+	core.DefaultStarted(ctx, dags, port)
 }
 
 func printDAG(dagId string) dag.Dag {
-	// [start] --> [end]
-	start := dag.NewNode(printTask{taskId: "start"})
-	start.NextTask(printTask{taskId: "finish"})
+	//         t21
+	//       /
+	// start
+	//       \
+	//         t22 --> finish
+	start := dag.NewNode(tasks.NewPrintTask("start", "hello"))
+	t21 := dag.NewNode(tasks.NewPrintTask("t21", "foo"))
+	t22 := dag.NewNode(tasks.NewPrintTask("t22", "bar"))
+	finish := dag.NewNode(tasks.NewPrintTask("finish", "I'm done!"))
 
-	startTs := time.Date(2024, time.March, 11, 12, 0, 0, 0, time.UTC)
+	start.Next(t21)
+	start.Next(t22)
+	t22.Next(finish)
+
+	startTs := time.Date(2024, time.March, 11, 12, 0, 0, 0, time.Local)
 	schedule := schedule.NewFixed(startTs, 10*time.Second)
 
 	printDag := dag.New(dag.Id(dagId)).
