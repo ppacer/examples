@@ -8,8 +8,9 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/ppacer/core v0.0.2-0.20240801073348-efa24c0f1abf // indirect
+	github.com/ppacer/core v0.0.3 // indirect
 	github.com/ppacer/tasks v0.0.0-20240801074708-6f04ce737306 // indirect
+	github.com/ppacer/ui v0.0.4 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect

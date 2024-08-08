@@ -8,14 +8,24 @@ import (
 	"github.com/ppacer/core/dag"
 	"github.com/ppacer/core/dag/schedule"
 	"github.com/ppacer/tasks"
+	"github.com/ppacer/ui"
+)
+
+const (
+	schedulerPort = 9321
+	uiPort        = 9322
 )
 
 func main() {
-	const port = 9321
 	ctx := context.Background()
+
 	dags := dag.Registry{}
-	dags.Add(printDAG("printing_dag"))
-	core.DefaultStarted(ctx, dags, port)
+	dags.Add(printDAG("hello_world_dag"))
+
+	go func() {
+		ui.DefaultStarted(schedulerPort, uiPort)
+	}()
+	core.DefaultStarted(ctx, dags, schedulerPort)
 }
 
 func printDAG(dagId string) dag.Dag {
